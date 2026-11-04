@@ -1,0 +1,11 @@
+{
+  "name": "loom-workspace",
+  "description": "Loom workspace scripts; check:ci runs the repo's tests",
+  "private": true,
+  "scripts": {
+    "test": "uv run pytest -q",
+    "check:ci": "uv sync -q && uv run pytest -q",
+    "check:all": "npm run check:ci",
+    "lint": "echo 'No linter configured.' && exit 0"
+  }
+}
