@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Behaviour change:** `gen` / `edit` now sniff the returned image bytes
+  (PNG / JPEG / WebP) and write the file under the real extension, so
+  `-o out.png` becomes `out.jpg` when the provider returns JPEG. The actual
+  path is printed on stdout and in `--json`, the sidecar is `<actual path>.json`,
+  and a one-line stderr note is emitted. Sidecars gain `format` and `mime`.
+  Unknown bytes keep the requested extension with `format: "unknown"`.
+- Documented that `-o` is a stem hint and that step counts use `--param steps=N`
+  (there is no `--steps` flag).
+
 ## 0.1.0 — 2026-07-28
 
 Initial release.

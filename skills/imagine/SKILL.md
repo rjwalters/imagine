@@ -32,8 +32,18 @@ imagine fit img.png --size 320x132 --max-kb 30 [--mode contain|cover]
 imagine doctor        # credential + dependency check; run this first on any failure
 ```
 
-Every output `foo.png` gets a `foo.png.json` sidecar (prompt, model, sha256,
-timestamp) — treat the pair as one artifact and keep them together.
+Every output `foo.png` gets a `foo.png.json` sidecar (prompt, model, format,
+mime, sha256, timestamp) — treat the pair as one artifact and keep them together.
+
+**`-o` is a stem hint, not a format request.** imagine never transcodes: the
+file keeps the provider's bytes, and the extension follows them (Gemini often
+returns JPEG, so `-o out.png` writes `out.jpg` plus `out.jpg.json`, with a
+`imagine: provider returned JPEG; wrote out.jpg` note on stderr). Read the real
+path from stdout or `--json`, and branch on the sidecar `format`
+(`png|jpeg|webp|unknown`) / `mime` rather than the extension you asked for.
+
+There is no `--steps` flag; pass step counts through the provider passthrough,
+e.g. `--param steps=4`.
 
 ## Workflow guidance for agents
 
