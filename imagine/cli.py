@@ -171,11 +171,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     token, account_id = config.cloudflare_credentials(args.cf_account)
     if not token or not account_id:
         accounts = config.cloudflare_accounts()
-        hint = f"accounts with workers-ai.env: {', '.join(accounts)}" if accounts else (
-            "add a Workers AI-scoped token file: ~/.cloudflare/<account>/workers-ai.env "
-            "(CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)"
-        )
-        print(f"cloudflare  MISSING  {hint}")
+        if accounts:
+            status = "NEEDS ACCOUNT"
+            hint = (
+                f"found workers-ai.env for: {', '.join(accounts)}; select one with "
+                "--cf-account <name> or IMAGINE_CF_ACCOUNT=<name> "
+                "(selection is required even with a single account)"
+            )
+        else:
+            status = "MISSING"
+            hint = (
+                "add a Workers AI-scoped token file: ~/.cloudflare/<account>/workers-ai.env "
+                "(CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID)"
+            )
+        print(f"cloudflare  {status}  {hint}")
         failures += 1
     else:
         error = cf.check(token, account_id)
