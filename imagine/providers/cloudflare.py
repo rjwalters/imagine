@@ -6,6 +6,7 @@ import base64
 import json
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 from ._retry import fetch
@@ -19,6 +20,71 @@ def _decode_b64_maybe_data_uri(value: str) -> bytes:
     return base64.b64decode(value)
 
 
+def build_json_body(
+    prompt: str,
+    refs: list[Path],
+    width: int | None,
+    height: int | None,
+    params: dict | None,
+) -> tuple[bytes, str]:
+    """Return (body, content_type) for models that take a JSON request."""
+    payload: dict = {"prompt": prompt}
+    if width:
+        payload["width"] = width
+    if height:
+        payload["height"] = height
+    if refs:
+        # Schema naming for reference images has churned, so send the common
+        # field and let --param override for exotic models.
+        payload["input_image"] = base64.b64encode(refs[0].read_bytes()).decode("ascii")
+        if len(refs) > 1:
+            payload["input_images"] = [
+                base64.b64encode(p.read_bytes()).decode("ascii") for p in refs
+            ]
+    if params:
+        payload.update(params)
+    return json.dumps(payload).encode("utf-8"), "application/json"
+
+
+def build_multipart_body(
+    prompt: str,
+    refs: list[Path],
+    width: int | None,
+    height: int | None,
+    params: dict | None,
+    boundary: str | None = None,
+) -> tuple[bytes, str]:
+    """Return (body, content_type) for models that require multipart/form-data.
+
+    Pure (no network). Reference images go in numbered ``input_image_<n>``
+    parts; the field name is unverified against the live schema — override
+    with --param if Cloudflare renames it. ``--param`` values replace
+    same-named fields; non-string values are JSON-encoded.
+    """
+    boundary = boundary or uuid.uuid4().hex
+    fields: dict[str, str] = {"prompt": prompt}
+    if width:
+        fields["width"] = str(width)
+    if height:
+        fields["height"] = str(height)
+    for key, value in (params or {}).items():
+        fields[key] = value if isinstance(value, str) else json.dumps(value)
+
+    out = bytearray()
+    for name, value in fields.items():
+        out += f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n'.encode()
+        out += value.encode("utf-8") + b"\r\n"
+    for i, path in enumerate(refs):
+        out += (
+            f'--{boundary}\r\nContent-Disposition: form-data; name="input_image_{i}"; '
+            f'filename="{path.name.replace(chr(34), "")}"\r\n'
+            "Content-Type: application/octet-stream\r\n\r\n"
+        ).encode()
+        out += path.read_bytes() + b"\r\n"
+    out += f"--{boundary}--\r\n".encode()
+    return bytes(out), f"multipart/form-data; boundary={boundary}"
+
+
 def generate(
     model_id: str,
     prompt: str,
@@ -29,27 +95,15 @@ def generate(
     height: int | None = None,
     params: dict | None = None,
     retry: bool = True,
+    body_format: str = "json",
 ) -> list[bytes]:
-    payload: dict = {"prompt": prompt}
-    if width:
-        payload["width"] = width
-    if height:
-        payload["height"] = height
-    if refs:
-        # FLUX.2 models take reference images; schema naming has churned, so
-        # send the common field and let --param override for exotic models.
-        payload["input_image"] = base64.b64encode(refs[0].read_bytes()).decode("ascii")
-        if len(refs) > 1:
-            payload["input_images"] = [
-                base64.b64encode(p.read_bytes()).decode("ascii") for p in refs
-            ]
-    if params:
-        payload.update(params)
+    builder = build_multipart_body if body_format == "multipart" else build_json_body
+    data, content_type_header = builder(prompt, refs, width, height, params)
 
     req = urllib.request.Request(
         API.format(account=account_id, model=model_id),
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        data=data,
+        headers={"Content-Type": content_type_header, "Authorization": f"Bearer {token}"},
         method="POST",
     )
     raw, content_type = fetch(req, 300, provider="cloudflare", model_id=model_id, retry=retry)
