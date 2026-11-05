@@ -48,6 +48,35 @@ def _out_paths(out: str | None, prompt: str, count: int) -> list[Path]:
     return [Path(f"{stem}-{stamp}-{i + 1}.png") for i in range(count)]
 
 
+# format -> (canonical extension, mime, extensions accepted as already correct)
+_FORMATS = {
+    "png": (".png", "image/png", {".png"}),
+    "jpeg": (".jpg", "image/jpeg", {".jpg", ".jpeg"}),
+    "webp": (".webp", "image/webp", {".webp"}),
+}
+
+
+def _sniff_format(data: bytes) -> str:
+    """Identify image bytes by magic number: png | jpeg | webp | unknown."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return "unknown"
+
+
+def _actual_path(path: Path, fmt: str) -> Path:
+    """Return path with the extension the bytes really need (unknown: unchanged)."""
+    if fmt == "unknown":
+        return path
+    ext, _mime, accepted = _FORMATS[fmt]
+    if path.suffix.lower() in accepted:
+        return path
+    return path.with_suffix(ext) if path.suffix else path.with_name(path.name + ext)
+
+
 def _size_args(size: str | None) -> tuple[str | None, int | None, int | None]:
     """Split --size into (gemini imageSize, cloudflare width, height)."""
     if not size:
@@ -111,7 +140,11 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
 
     outputs = _out_paths(args.out, prompt, len(batches))
     records = []
-    for path, data in zip(outputs, batches):
+    for requested, data in zip(outputs, batches):
+        fmt = _sniff_format(data)
+        path = _actual_path(requested, fmt)
+        if path != requested:
+            print(f"imagine: provider returned {fmt.upper()}; wrote {path}", file=sys.stderr)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
         record = {
@@ -123,6 +156,8 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
             "refs": [str(r) for r in refs],
             "aspect_ratio": args.ar,
             "size": args.size,
+            "format": fmt,
+            "mime": _FORMATS[fmt][1] if fmt != "unknown" else None,
             "sha256": hashlib.sha256(data).hexdigest(),
             "created": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         }
