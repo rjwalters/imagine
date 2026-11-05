@@ -50,7 +50,7 @@ Every generated `foo.png` is written next to a `foo.png.json` sidecar recording 
 ./install.sh /path/to/consumer-repo    # or `.`
 ```
 
-Installs `/imagine:gen` and `/imagine:help` commands plus the `imagine` skill into the target's `.claude/`, and appends one marker-bounded block to its `CLAUDE.md` (replaced in place on re-install; `./uninstall.sh` removes exactly what was written). The skill teaches the agent the loop that makes generation actually work: route to the right model, pass brand art as `--ref`, **look at the output**, iterate, then `fit` to the platform spec.
+Installs `/imagine:gen` and `/imagine:help` commands plus the `imagine` skill into the target's `.claude/`, and appends one marker-bounded block to its `CLAUDE.md` (replaced in place on re-install; `./uninstall.sh` removes exactly what was written). It also writes a tracked `.claude/skills/imagine/install-metadata.json` (version, commit, layout version, commands) and a gitignored sidecar `.install-local.json` (source clone path, install time), so `/repo:update-tools` can discover `imagine` per the Repo installer contract (C5/C6); the sidecar's line is added to the target's `.gitignore`. The skill teaches the agent the loop that makes generation actually work: route to the right model, pass brand art as `--ref`, **look at the output**, iterate, then `fit` to the platform spec.
 
 ## Development
 

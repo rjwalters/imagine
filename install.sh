@@ -7,6 +7,9 @@
 # Write footprint (nothing else is touched):
 #   .claude/skills/imagine/       skill file
 #   .claude/commands/imagine/     one file per /imagine:* command
+#   .claude/skills/imagine/install-metadata.json   tracked: version, commit, layout_version, commands
+#   .claude/skills/imagine/.install-local.json     gitignored sidecar: source clone path, installed_at
+#   .gitignore                    one line ignoring the sidecar (idempotent)
 #   CLAUDE.md                     one marker-bounded block, replaced in place
 set -euo pipefail
 
@@ -42,6 +45,46 @@ run cp "$SOURCE_DIR/skills/imagine/SKILL.md" "$TARGET/.claude/skills/imagine/SKI
 for cmd in "$SOURCE_DIR"/commands/imagine/*.md; do
   run cp "$cmd" "$TARGET/.claude/commands/imagine/$(basename "$cmd")"
 done
+
+# Installer contract (rjwalters/repo INSTALLER-CONTRACT.md C5/C6): tracked
+# metadata is byte-identical across machines (no path/host/user/timestamp);
+# machine-local facts go in a gitignored sidecar.
+META_REL=".claude/skills/imagine/install-metadata.json"
+SIDECAR_REL=".claude/skills/imagine/.install-local.json"
+if [[ $DRY_RUN -eq 1 ]]; then
+  echo "would: write $TARGET/$META_REL"
+  echo "would: write $TARGET/$SIDECAR_REL"
+  echo "would: add $SIDECAR_REL to $TARGET/.gitignore"
+else
+  python3 - "$SOURCE_DIR" "$TARGET" "$META_REL" "$SIDECAR_REL" <<'PY'
+import datetime, json, pathlib, subprocess, sys
+source, target = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+meta_rel, sidecar_rel = sys.argv[3], sys.argv[4]
+try:
+    commit = subprocess.run(["git", "-C", str(source), "rev-parse", "HEAD"],
+                            capture_output=True, text=True, check=True).stdout.strip() or "unknown"
+except (subprocess.CalledProcessError, OSError):
+    commit = "unknown"
+meta = {
+    "version": (source / "VERSION").read_text().strip(),
+    "commit": commit,
+    "layout_version": 1,
+    "commands": sorted(p.stem for p in (source / "commands" / "imagine").glob("*.md")),
+}
+(target / meta_rel).write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
+sidecar = {
+    "source": str(source),
+    "installed_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+}
+(target / sidecar_rel).write_text(json.dumps(sidecar, indent=2, sort_keys=True) + "\n")
+gi = target / ".gitignore"
+text = gi.read_text() if gi.exists() else ""
+if sidecar_rel not in text.splitlines():
+    if text and not text.endswith("\n"):
+        text += "\n"
+    gi.write_text(text + sidecar_rel + "\n")
+PY
+fi
 
 claude_md="$TARGET/CLAUDE.md"
 if [[ $DRY_RUN -eq 1 ]]; then

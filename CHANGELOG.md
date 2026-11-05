@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `install.sh` now writes `.claude/skills/imagine/install-metadata.json`
+  (version, commit, layout_version, commands) and a gitignored
+  `.install-local.json` sidecar (source path, installed_at), adding the sidecar
+  to the target's `.gitignore`; `uninstall.sh` removes that line. Lets
+  `/repo:update-tools` discover `imagine` (installer contract C5/C6).
 - **Behaviour change:** `gen` / `edit` now sniff the returned image bytes
   (PNG / JPEG / WebP) and write the file under the real extension, so
   `-o out.png` becomes `out.jpg` when the provider returns JPEG. The actual
