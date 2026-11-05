@@ -21,6 +21,10 @@ through the `imagine` CLI (see the `imagine` skill for full routing and flags).
 4. **Review the image yourself** (Read the file). Check: requested elements
    present, any text spelled exactly, style matches references. If not,
    iterate — revised prompt or `imagine edit` — up to ~3 rounds before
-   showing intermediate results and asking for direction.
+   showing intermediate results and asking for direction. If transparency
+   was requested, check for a real alpha channel (`magick identify -format
+   '%[channels]' out.png`); output is normally opaque with a drawn
+   checkerboard or white fill, so re-prompt for it at most once, then
+   generate full-bleed and mask locally (see the `imagine` skill).
 5. **Package if a platform spec applies:** `imagine fit out.png --size WxH
    --max-kb N`. Report the final path(s) and what you verified.
