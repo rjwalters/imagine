@@ -107,6 +107,7 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
             batches.extend(cf.generate(
                 model.model_id, prompt, token, account_id, refs=refs,
                 width=width, height=height, params=params,
+                body_format=model.body_format,
             ))
 
     outputs = _out_paths(args.out, prompt, len(batches))

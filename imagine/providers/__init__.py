@@ -18,6 +18,7 @@ class Model:
     model_id: str
     note: str
     supports_ref: bool = False  # accepts reference/input images
+    body_format: str = "json"  # Cloudflare request body: "json" | "multipart"
 
 
 MODELS: tuple[Model, ...] = (
@@ -40,16 +41,19 @@ MODELS: tuple[Model, ...] = (
         "flux-2-dev", "cloudflare", "@cf/black-forest-labs/flux-2-dev",
         "FLUX.2 [dev] — photorealism, multi-reference, JSON prompting",
         supports_ref=True,
+        body_format="multipart",
     ),
     Model(
         "flux-2-klein", "cloudflare", "@cf/black-forest-labs/flux-2-klein-9b",
         "FLUX.2 [klein] 9B — fast unified generation + editing",
         supports_ref=True,
+        body_format="multipart",
     ),
     Model(
         "flux-2-klein-4b", "cloudflare", "@cf/black-forest-labs/flux-2-klein-4b",
         "FLUX.2 [klein] 4B — fastest FLUX.2 distill, 4-step inference",
         supports_ref=True,
+        body_format="multipart",
     ),
     Model(
         "flux-schnell", "cloudflare", "@cf/black-forest-labs/flux-1-schnell",
