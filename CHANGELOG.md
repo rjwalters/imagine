@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- `install.sh` now writes `.claude/skills/imagine/install-metadata.json`
+  (version, commit, layout_version, commands) and a gitignored
+  `.install-local.json` sidecar (source path, installed_at), adding the sidecar
+  to the target's `.gitignore`; `uninstall.sh` removes that line. Lets
+  `/repo:update-tools` discover `imagine` (installer contract C5/C6).
+
 ## 0.1.0 — 2026-07-28
 
 Initial release.
