@@ -12,9 +12,11 @@ Imagine turns state-of-the-art image models into a boring, dependable command-li
 uv tool install git+https://github.com/rjwalters/imagine   # installs `imagine`
 imagine doctor                                              # tells you exactly what's missing
 imagine gen "a neon owl badge, glowing orange tube letters" -o owl.png
-imagine edit owl.png "make the background transparent"
+imagine edit owl.png "recolor the lettering to electric blue"
 imagine fit owl.png --size 320x132 --max-kb 30              # platform-spec packaging
 ```
+
+Generated images are opaque RGB: asking for a "transparent background" yields a drawn checkerboard or white fill, not an alpha channel. For real transparency, generate full-bleed and mask locally (see `skills/imagine/SKILL.md`).
 
 ## Models
 
