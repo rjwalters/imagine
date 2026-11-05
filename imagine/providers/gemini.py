@@ -9,6 +9,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from ._retry import fetch
+
 API = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 # Aspect ratios the imageConfig accepts; anything else is passed through
@@ -25,19 +27,15 @@ def _inline_part(path: Path) -> dict:
     return {"inlineData": {"mimeType": mime, "data": data}}
 
 
-def _request(model_id: str, api_key: str, body: dict) -> dict:
+def _request(model_id: str, api_key: str, body: dict, retry: bool = True) -> dict:
     req = urllib.request.Request(
         API.format(model=model_id),
         data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(req, timeout=300) as resp:
-            return json.load(resp)
-    except urllib.error.HTTPError as err:
-        detail = err.read().decode("utf-8", "replace")
-        raise SystemExit(f"imagine: gemini {err.code} for {model_id}: {detail[:2000]}") from err
+    raw, _ = fetch(req, 300, provider="gemini", model_id=model_id, retry=retry)
+    return json.loads(raw)
 
 
 def _extract_images(response: dict) -> list[bytes]:
@@ -57,6 +55,7 @@ def generate(
     refs: list[Path] = [],
     aspect_ratio: str | None = None,
     image_size: str | None = None,
+    retry: bool = True,
 ) -> list[bytes]:
     parts: list[dict] = [_inline_part(p) for p in refs]
     parts.append({"text": prompt})
@@ -74,12 +73,12 @@ def generate(
         "contents": [{"parts": parts}],
         "generationConfig": generation_config,
     }
-    response = _request(model_id, api_key, body)
+    response = _request(model_id, api_key, body, retry)
     images = _extract_images(response)
     if not images:
         # Some model versions want TEXT alongside IMAGE; retry once.
         body["generationConfig"]["responseModalities"] = ["TEXT", "IMAGE"]
-        response = _request(model_id, api_key, body)
+        response = _request(model_id, api_key, body, retry)
         images = _extract_images(response)
     if not images:
         feedback = response.get("promptFeedback") or response.get("candidates")

@@ -15,6 +15,10 @@
   Unknown bytes keep the requested extension with `format: "unknown"`.
 - Documented that `-o` is a stem hint and that step counts use `--param steps=N`
   (there is no `--steps` flag).
+- `gen` / `edit` retry transient provider errors (HTTP 429/500/502/503/504,
+  connection errors) up to 3 attempts with 1s/2s backoff, honouring
+  `Retry-After` up to 30s. Each retry logs one stderr line. `--no-retry` or
+  `IMAGINE_NO_RETRY=1` restores single-attempt behaviour.
 
 ## 0.1.0 — 2026-07-28
 

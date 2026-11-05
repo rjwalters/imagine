@@ -14,7 +14,7 @@ JUNK = b"not an image"
 def _args(out, n=1):
     return SimpleNamespace(
         model="nano-banana", ref=None, size=None, param=None, n=n, ar=None,
-        out=out, json=False, cf_account=None,
+        out=out, json=False, cf_account=None, no_retry=False,
     )
 
 

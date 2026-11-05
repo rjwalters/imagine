@@ -117,7 +117,7 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
                       f"passing through", file=sys.stderr)
             batches.extend(gemini.generate(
                 model.model_id, prompt, key, refs=refs,
-                aspect_ratio=args.ar, image_size=image_size,
+                aspect_ratio=args.ar, image_size=image_size, retry=not args.no_retry,
             ))
         else:
             token, account_id = config.cloudflare_credentials(args.cf_account)
@@ -136,7 +136,7 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
             batches.extend(cf.generate(
                 model.model_id, prompt, token, account_id, refs=refs,
                 width=width, height=height, params=params,
-                body_format=model.body_format,
+                body_format=model.body_format, retry=not args.no_retry,
             ))
 
     outputs = _out_paths(args.out, prompt, len(batches))
@@ -253,6 +253,9 @@ def _add_generation_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cf-account", help="account dir under ~/.cloudflare (or IMAGINE_CF_ACCOUNT)")
     parser.add_argument("--param", action="append", metavar="K=V",
                         help="raw provider parameter passthrough (repeatable)")
+    parser.add_argument("--no-retry", action="store_true",
+                        help="single attempt; don't retry transient provider errors "
+                             "(or set IMAGINE_NO_RETRY=1)")
     parser.add_argument("--json", action="store_true", help="print metadata records to stderr")
 
 

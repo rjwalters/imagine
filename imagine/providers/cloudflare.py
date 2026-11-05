@@ -9,6 +9,8 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from ._retry import fetch
+
 API = "https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/{model}"
 
 
@@ -92,6 +94,7 @@ def generate(
     width: int | None = None,
     height: int | None = None,
     params: dict | None = None,
+    retry: bool = True,
     body_format: str = "json",
 ) -> list[bytes]:
     builder = build_multipart_body if body_format == "multipart" else build_json_body
@@ -103,13 +106,7 @@ def generate(
         headers={"Content-Type": content_type_header, "Authorization": f"Bearer {token}"},
         method="POST",
     )
-    try:
-        with urllib.request.urlopen(req, timeout=300) as resp:
-            content_type = resp.headers.get("Content-Type", "")
-            raw = resp.read()
-    except urllib.error.HTTPError as err:
-        detail = err.read().decode("utf-8", "replace")
-        raise SystemExit(f"imagine: cloudflare {err.code} for {model_id}: {detail[:2000]}") from err
+    raw, content_type = fetch(req, 300, provider="cloudflare", model_id=model_id, retry=retry)
 
     if content_type.startswith("image/"):
         return [raw]
