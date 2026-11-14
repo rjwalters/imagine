@@ -11,6 +11,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+_ALPHA_OK = {".png", ".webp"}
+
 
 def _run(cmd: list[str]) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -27,17 +29,26 @@ def fit(
 ) -> Path:
     """Resize `src` to `size` (WxH) and/or compress under `max_kb`, into `dest`.
 
-    mode "contain" letterboxes onto transparency; "cover" center-crops.
+    mode "contain" letterboxes (onto transparency for .png/.webp, white for
+    alpha-less formats); "cover" center-crops.
     """
     if not shutil.which("magick"):
         raise SystemExit("imagine: `magick` (ImageMagick) is required for fit — brew install imagemagick")
+
+    if max_kb and dest.suffix.lower() != ".png":
+        raise SystemExit(
+            f"imagine: --max-kb needs a PNG destination (got "
+            f"{dest.suffix or 'no extension'}) — the byte-budget pass re-encodes "
+            f"as PNG8; drop --max-kb or pass a .png --out"
+        )
 
     cmd = ["magick", str(src)]
     if size:
         if mode == "cover":
             cmd += ["-resize", f"{size}^", "-gravity", "center", "-extent", size]
         else:
-            cmd += ["-background", "none", "-resize", size,
+            bg = "none" if dest.suffix.lower() in _ALPHA_OK else "white"
+            cmd += ["-background", bg, "-resize", size,
                     "-gravity", "center", "-extent", size]
     cmd.append(str(dest))
     _run(cmd)

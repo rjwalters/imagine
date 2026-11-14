@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Behaviour change:** `fit` now defaults the destination to `<name>-fit.png`
+  regardless of the source extension (the `--out` help text already promised
+  this, and the `--max-kb` byte-budget pass only emits PNG8). `--max-kb` with a
+  non-PNG `--out` is refused up front with a clear message and writes nothing,
+  and `contain` letterboxes onto white for alpha-less destinations (`.jpg`)
+  instead of `-background none`.
 - `gen` / `edit` sidecars and `--json` records gain a `params` object holding the
   parsed `--param` values (`{}` when none were given), so two runs differing only
   in `--param` no longer write identical provenance. Recorded as requested, even

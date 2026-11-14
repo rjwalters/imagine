@@ -237,7 +237,7 @@ def cmd_fit(args: argparse.Namespace) -> int:
     src = Path(args.image)
     if not src.is_file():
         raise SystemExit(f"imagine: no such file: {src}")
-    dest = Path(args.out) if args.out else src.with_name(f"{src.stem}-fit{src.suffix}")
+    dest = Path(args.out) if args.out else src.with_name(f"{src.stem}-fit.png")
     fit_image(src, dest, size=args.size, max_kb=args.max_kb, mode=args.mode)
     print(dest)
     return 0
