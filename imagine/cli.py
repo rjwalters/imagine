@@ -157,6 +157,7 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
             "refs": [str(r) for r in refs],
             "aspect_ratio": args.ar,
             "size": args.size,
+            "params": params,
             "format": fmt,
             "mime": _FORMATS[fmt][1] if fmt != "unknown" else None,
             "sha256": hashlib.sha256(data).hexdigest(),

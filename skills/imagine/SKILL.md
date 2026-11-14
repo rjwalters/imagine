@@ -33,7 +33,9 @@ imagine doctor        # credential + dependency check; run this first on any fai
 ```
 
 Every output `foo.png` gets a `foo.png.json` sidecar (prompt, model, format,
-mime, sha256, timestamp) — treat the pair as one artifact and keep them together.
+mime, `params`, sha256, timestamp) — treat the pair as one artifact and keep
+them together. `params` holds the `--param` values as you passed them (`{}`
+when you passed none).
 
 **`-o` is a stem hint, not a format request.** imagine never transcodes: the
 file keeps the provider's bytes, and the extension follows them (Gemini often
