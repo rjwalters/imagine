@@ -123,7 +123,8 @@ def test_params_empty_dict_when_no_flags(run, tmp_path):
 
 def test_params_in_json_record(run, tmp_path, capsys):
     run(tmp_path / "out.png", [PNG], param=["steps=4", "sampler=euler"], json_out=True)
-    records = json.loads(capsys.readouterr().err)
+    err = capsys.readouterr().err
+    records = json.loads(err[err.index("["):])
     assert len(records) == 1
     assert records[0]["params"] == {"steps": 4, "sampler": "euler"}
     assert isinstance(records[0]["params"]["steps"], int)
