@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `gen` / `edit` sidecars and `--json` records gain a `params` object holding the
+  parsed `--param` values (`{}` when none were given), so two runs differing only
+  in `--param` no longer write identical provenance. Recorded as requested, even
+  on a provider that ignores `--param`.
 - `install.sh` now writes `.claude/skills/imagine/install-metadata.json`
   (version, commit, layout_version, commands) and a gitignored
   `.install-local.json` sidecar (source path, installed_at), adding the sidecar
