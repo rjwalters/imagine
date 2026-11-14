@@ -8,6 +8,10 @@
   and exits 0. All applicability notes — including the pre-existing `--ar is a
   Gemini option` and undocumented-aspect-ratio notes, whose wording is unchanged
   — are now emitted once per invocation rather than once per image under `--n`.
+- `gen` / `edit` sidecars and `--json` records gain a `params` object holding the
+  parsed `--param` values (`{}` when none were given), so two runs differing only
+  in `--param` no longer write identical provenance. Recorded as requested, even
+  on a provider that ignores `--param`.
 - `install.sh` now writes `.claude/skills/imagine/install-metadata.json`
   (version, commit, layout_version, commands) and a gitignored
   `.install-local.json` sidecar (source path, installed_at), adding the sidecar

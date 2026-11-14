@@ -42,7 +42,7 @@ One key per provider, resolved from (in order) the process environment, `~/.conf
 
 ## Output contract
 
-Every generated `foo.png` is written next to a `foo.png.json` sidecar recording tool version, provider, model, prompt, references, sha256, and timestamp. The pair is the artifact; downstream workflows (Anvil threads, brand repos) should move them together.
+Every generated `foo.png` is written next to a `foo.png.json` sidecar recording tool version, provider, model, prompt, references, `--param` values (`params`), sha256, and timestamp. The pair is the artifact; downstream workflows (Anvil threads, brand repos) should move them together.
 
 ## Claude Code skills
 
