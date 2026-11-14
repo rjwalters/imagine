@@ -13,19 +13,19 @@ _None._
 
 `loom:very-important` (one counts per workspace); every stage takes these first.
 
-_None._
+- **#20**: fit: stop writing PNG bytes under a non-PNG name, and add tests for postprocess
 
 ## Important
 
 `loom:important`; taken before unlabelled work.
 
-_None._
+- **#22**: Deduplicate the Cloudflare credentials-missing hint: gen still prints the pre-#4 message
 
 ## Ready
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#19**: gen/edit: record --param values in the provenance sidecar
 
 ## In Progress
 
@@ -49,11 +49,13 @@ _None._
 
 Issues carrying `loom:curated`.
 
-_None._
+- **#18**: gen/edit: print a note when --param or --size does not apply to the selected provider *(curated)*
+- **#19**: gen/edit: record --param values in the provenance sidecar *(curated)*
+- **#20**: fit: stop writing PNG bytes under a non-PNG name, and add tests for postprocess *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#22**: Deduplicate the Cloudflare credentials-missing hint: gen still prints the pre-#4 message *(hermit)*
 
 ## Epics
 
@@ -64,13 +66,13 @@ _None._
 | Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Very important | 0 |
-| Important | 0 |
-| Ready (`loom:issue`) | 0 |
+| Very important | 1 |
+| Important | 1 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 0 |
-| Architect / Hermit proposals | 0 |
+| Curated | 3 |
+| Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
