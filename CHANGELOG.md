@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `gen` / `edit` now print a one-line `imagine: note:` on stderr when an option
+  does not apply to the selected provider: `--param` or `--size WxH` on a Gemini
+  model, and `--size 1K/2K/4K` on a Cloudflare model. Generation still proceeds
+  and exits 0. All applicability notes — including the pre-existing `--ar is a
+  Gemini option` and undocumented-aspect-ratio notes, whose wording is unchanged
+  — are now emitted once per invocation rather than once per image under `--n`.
 - `install.sh` now writes `.claude/skills/imagine/install-metadata.json`
   (version, commit, layout_version, commands) and a gitignored
   `.install-local.json` sidecar (source path, installed_at), adding the sidecar

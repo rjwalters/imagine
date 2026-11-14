@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from . import __version__, config
-from .providers import DEFAULT_ALIAS, MODELS, resolve
+from .providers import DEFAULT_ALIAS, MODELS, Model, resolve
 from .providers import cloudflare as cf
 from .providers import gemini
 from .postprocess import fit as fit_image
@@ -89,6 +89,32 @@ def _size_args(size: str | None) -> tuple[str | None, int | None, int | None]:
     raise SystemExit(f"imagine: --size must be 1K/2K/4K or WxH, got '{size}'")
 
 
+def _applicability_notes(
+    model: Model,
+    args: argparse.Namespace,
+    image_size: str | None,
+    width: int | None,
+    params: dict,
+) -> list[str]:
+    """Notes for options the selected provider will ignore (once per run)."""
+    notes: list[str] = []
+    if model.provider == "gemini":
+        if params:
+            notes.append("--param is a Cloudflare option; Gemini models ignore it")
+        if width is not None:
+            notes.append("--size WxH is a Cloudflare option; "
+                         "use --size 1K/2K/4K for Gemini models")
+        if args.ar and args.ar not in gemini.KNOWN_ASPECT_RATIOS:
+            notes.append(f"'{args.ar}' is not a documented aspect ratio; passing through")
+    else:
+        if args.ar:
+            notes.append("--ar is a Gemini option; use --size WxH for Cloudflare models")
+        if image_size is not None:
+            notes.append("--size 1K/2K/4K is a Gemini option; "
+                         "use --size WxH for Cloudflare models")
+    return notes
+
+
 def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
     model = resolve(args.model)
     for ref in refs:
@@ -103,6 +129,9 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
     image_size, width, height = _size_args(args.size)
     params = _parse_params(args.param or [])
 
+    for note in _applicability_notes(model, args, image_size, width, params):
+        print(f"imagine: note: {note}", file=sys.stderr)
+
     batches: list[bytes] = []
     for _ in range(args.n):
         if model.provider == "gemini":
@@ -112,9 +141,6 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
                     "imagine: GEMINI_API_KEY not found (env or ~/.config/imagine/env) — "
                     "create one at https://aistudio.google.com/apikey"
                 )
-            if args.ar and args.ar not in gemini.KNOWN_ASPECT_RATIOS:
-                print(f"imagine: note: '{args.ar}' is not a documented aspect ratio; "
-                      f"passing through", file=sys.stderr)
             batches.extend(gemini.generate(
                 model.model_id, prompt, key, refs=refs,
                 aspect_ratio=args.ar, image_size=image_size, retry=not args.no_retry,
@@ -130,9 +156,6 @@ def _generate(args: argparse.Namespace, prompt: str, refs: list[Path]) -> int:
                     f"imagine: Cloudflare credentials not found; set CLOUDFLARE_API_TOKEN + "
                     f"CLOUDFLARE_ACCOUNT_ID or pass --cf-account{hint}"
                 )
-            if args.ar:
-                print("imagine: note: --ar is a Gemini option; use --size WxH for "
-                      "Cloudflare models", file=sys.stderr)
             batches.extend(cf.generate(
                 model.model_id, prompt, token, account_id, refs=refs,
                 width=width, height=height, params=params,
