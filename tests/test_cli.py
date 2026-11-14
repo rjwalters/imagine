@@ -1,5 +1,7 @@
 import argparse
 
+import pytest
+
 from imagine import cli, config
 
 
@@ -52,3 +54,49 @@ def test_doctor_account_selected_ok(monkeypatch, tmp_path, capsys):
     _add_account(store, "2amlogic")
     cli.cmd_doctor(argparse.Namespace(cf_account="2amlogic"))
     assert _cf_line(capsys.readouterr().out).split() == ["cloudflare", "OK"]
+
+
+def _gen_args(**overrides):
+    """Namespace for cli._generate on a Cloudflare model."""
+    args = dict(
+        model="flux-schnell", ref=None, size=None, param=None, n=1, ar=None,
+        out=None, json=False, cf_account=None, no_retry=False,
+    )
+    args.update(overrides)
+    return argparse.Namespace(**args)
+
+
+def test_gen_needs_account_names_selection_guidance(monkeypatch, tmp_path):
+    """gen must emit the post-#4 selection guidance, not the superseded wording."""
+    store = _isolate(monkeypatch, tmp_path)
+    _add_account(store, "2amlogic")
+    with pytest.raises(SystemExit) as excinfo:
+        cli._generate(_gen_args(), "tiny red dot", [])
+    message = str(excinfo.value)
+    assert "Cloudflare credentials not found" in message
+    assert "2amlogic" in message
+    assert "--cf-account" in message and "IMAGINE_CF_ACCOUNT" in message
+    assert "even with a single account" in message
+    assert "accounts with workers-ai.env" not in message  # the pre-#4 wording
+
+
+def test_gen_missing_points_at_the_token_file(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    with pytest.raises(SystemExit) as excinfo:
+        cli._generate(_gen_args(), "tiny red dot", [])
+    message = str(excinfo.value)
+    assert "~/.cloudflare/<account>/workers-ai.env" in message
+    assert "CLOUDFLARE_API_TOKEN" in message and "CLOUDFLARE_ACCOUNT_ID" in message
+    assert "IMAGINE_CF_ACCOUNT" not in message  # nothing to select
+
+
+def test_doctor_and_gen_share_one_hint(monkeypatch, tmp_path, capsys):
+    """The two surfaces format one helper result; they cannot drift apart."""
+    store = _isolate(monkeypatch, tmp_path)
+    _add_account(store, "2amlogic")
+    status, hint = cli._cloudflare_missing(config.cloudflare_accounts())
+    cli.cmd_doctor(argparse.Namespace(cf_account=None))
+    assert _cf_line(capsys.readouterr().out) == f"cloudflare  {status}  {hint}"
+    with pytest.raises(SystemExit) as excinfo:
+        cli._generate(_gen_args(), "tiny red dot", [])
+    assert str(excinfo.value) == f"imagine: Cloudflare credentials not found; {hint}"
